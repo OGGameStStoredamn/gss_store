@@ -7,84 +7,79 @@
     <script src="https://telegram.org"></script>
     <script src="https://cloudpayments.ru"></script>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; color: #333; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .card { background: white; border-radius: 15px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); width: 100%; max-width: 400px; box-sizing: border-box; }
-        .title { font-size: 18px; font-weight: bold; margin-bottom: 15px; }
-        button { background: #0088cc; color: white; border: none; border-radius: 12px; padding: 15px; width: 100%; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        button:active { transform: scale(0.98); background: #0077b5; }
-        select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; font-size: 16px; background: #fafafa; margin-bottom: 10px; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+            /* Улучшенный путь к фону */
+            background: #000 url('bg.jpg') no-repeat center center fixed; 
+            background-size: cover;
+        }
+        .card { 
+            background: rgba(0, 0, 0, 0.6); 
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; 
+            padding: 20px; margin-bottom: 20px; width: 100%; max-width: 400px; 
+            box-sizing: border-box; color: white;
+        }
+        h2 { color: white; width: 100%; text-align: left; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+        button { 
+            background: linear-gradient(45deg, #ff007f, #6200ea); color: white; 
+            border: none; border-radius: 12px; padding: 15px; width: 100%; 
+            font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px;
+            box-shadow: 0 4px 15px rgba(255, 0, 127, 0.3);
+        }
+        select { 
+            width: 100%; padding: 12px; border-radius: 10px; border: none; 
+            font-size: 16px; background: white; margin-bottom: 10px; color: #333;
+        }
     </style>
 </head>
 <body>
-    <h2 style="width: 100%; text-align: left;">🎮 Магазин GSS</h2>
+    <h2>🎮 Game Station Store</h2>
     
     <div class="card">
-        <div class="title">PlayStation Turkey (TL) 🇹🇷</div>
+        <div style="font-weight: bold; margin-bottom: 10px;">PlayStation Turkey (TL) 🇹🇷</div>
         <select id="nominal_tr">
             <option value="1500" data-val="250">250 TL — 1500₽</option>
-            <option value="3000" data-val="500">500 TL — 3000₽</option>
-            <option value="4500" data-val="750">750 TL — 4500₽</option>
             <option value="6000" data-val="1000">1000 TL — 6000₽</option>
         </select>
-        <button onclick="pay('tr')">Купить коды</button>
-    </div>
-
-    <div class="card">
-        <div class="title">PlayStation India (INR) 🇮🇳</div>
-        <select id="nominal_in">
-            <option value="1500" data-val="1000">1000 INR — 1500₽</option>
-            <option value="4500" data-val="3000">3000 INR — 4500₽</option>
-            <option value="7500" data-val="5000">5000 INR — 7500₽</option>
-        </select>
-        <button onclick="pay('in')">Купить коды</button>
+        <button id="btn_tr">Купить коды</button>
     </div>
 
     <script>
         let tg = window.Telegram.WebApp;
-        tg.expand(); 
+        tg.expand();
 
-        function pay(region) {
+        document.getElementById('btn_tr').onclick = function() {
             try {
-                let select = document.getElementById('nominal_' + region);
+                let select = document.getElementById('nominal_tr');
                 let amount = select.value;
-                let label = select.options[select.selectedIndex].text;
-                let nominalValue = select.options[select.selectedIndex].getAttribute('data-val');
-                
-                // Безопасно получаем ID пользователя
-                let userId = "0";
-                if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-                    userId = String(tg.initDataUnsafe.user.id);
-                }
+                let userId = tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : "0";
 
-                let widget = new cp.CloudPayments();
+                var widget = new cp.CloudPayments();
                 widget.pay('auth', 
-                    { // Настройки платежа
-                        publicId: 'pk_58452a4fdeaf4305db7c779244bae',
-                        description: 'Оплата ' + label,
+                    { 
+                        publicId: 'pk_f40c5ff654a102c24b210617e2a0f', // ТВОЙ НОВЫЙ ТЕСТОВЫЙ ID
+                        description: 'Пополнение PlayStation Store',
                         amount: parseFloat(amount),
                         currency: 'RUB',
-                        accountId: userId, 
-                        invoiceId: region + '_' + nominalValue + '_' + Date.now(),
-                        data: {
-                            user_id: userId,
-                            region: region,
-                            nominal: nominalValue
-                        }
+                        accountId: String(userId),
+                        invoiceId: 'order_' + Date.now()
                     },
-                    { // Обработка результата
+                    {
                         onSuccess: function (options) { 
-                            tg.showAlert("✅ Оплата прошла! Мы выдадим код в боте.");
-                            tg.close();
+                            tg.showAlert("✅ Оплата прошла! Менеджер отправит код."); 
+                            tg.close(); 
                         },
                         onFail: function (reason, options) { 
-                            tg.showAlert("❌ Ошибка: " + reason);
+                            tg.showAlert("❌ Ошибка: " + reason); 
                         }
                     }
                 );
-            } catch (err) {
-                tg.showAlert("Критическая ошибка: " + err.message);
+            } catch (e) {
+                tg.showAlert("Критическая ошибка: " + e.message);
             }
-        }
+        };
     </script>
 </body>
 </html>
