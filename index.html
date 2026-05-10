@@ -2,35 +2,32 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>GSS Store</title>
+    <!-- Подключаем скрипты -->
     <script src="https://telegram.org"></script>
     <script src="https://cloudpayments.ru"></script>
     <style>
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh;
-            /* Улучшенный путь к фону */
-            background: #000 url('bg.jpg') no-repeat center center fixed; 
-            background-size: cover;
+            background: #000 url('bg.jpg') no-repeat center center fixed; background-size: cover;
+            color: white;
         }
         .card { 
-            background: rgba(0, 0, 0, 0.6); 
-            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; 
-            padding: 20px; margin-bottom: 20px; width: 100%; max-width: 400px; 
-            box-sizing: border-box; color: white;
+            background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; padding: 20px; margin-bottom: 20px; 
+            width: 100%; max-width: 400px; box-sizing: border-box;
         }
-        h2 { color: white; width: 100%; text-align: left; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
-        button { 
+        h2 { width: 100%; text-align: left; margin-bottom: 20px; }
+        .price-btn { 
             background: linear-gradient(45deg, #ff007f, #6200ea); color: white; 
             border: none; border-radius: 12px; padding: 15px; width: 100%; 
             font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px;
-            box-shadow: 0 4px 15px rgba(255, 0, 127, 0.3);
         }
         select { 
-            width: 100%; padding: 12px; border-radius: 10px; border: none; 
-            font-size: 16px; background: white; margin-bottom: 10px; color: #333;
+            width: 100%; padding: 12px; border-radius: 10px; border: none; font-size: 16px; 
+            background: white; margin-bottom: 10px; color: #333;
         }
     </style>
 </head>
@@ -38,48 +35,55 @@
     <h2>🎮 Game Station Store</h2>
     
     <div class="card">
-        <div style="font-weight: bold; margin-bottom: 10px;">PlayStation Turkey (TL) 🇹🇷</div>
+        <div style="margin-bottom: 10px;">PlayStation Turkey (TL) 🇹🇷</div>
         <select id="nominal_tr">
             <option value="1500" data-val="250">250 TL — 1500₽</option>
+            <option value="3000" data-val="500">500 TL — 3000₽</option>
             <option value="6000" data-val="1000">1000 TL — 6000₽</option>
         </select>
-        <button id="btn_tr">Купить коды</button>
+        <button class="price-btn" onclick="runPay()">💳 Купить коды</button>
     </div>
 
     <script>
         let tg = window.Telegram.WebApp;
         tg.expand();
 
-        document.getElementById('btn_tr').onclick = function() {
+        function runPay() {
             try {
+                // 1. Проверяем данные
                 let select = document.getElementById('nominal_tr');
-                let amount = select.value;
-                let userId = tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : "0";
+                let amount = parseFloat(select.value);
+                let userId = (tg.initDataUnsafe && tg.initDataUnsafe.user) ? String(tg.initDataUnsafe.user.id) : "0";
 
+                // 2. Инициализируем виджет
                 var widget = new cp.CloudPayments();
+                
+                // 3. Запускаем оплату
                 widget.pay('auth', 
                     { 
-                        publicId: 'pk_f40c5ff654a102c24b210617e2a0f', // ТВОЙ НОВЫЙ ТЕСТОВЫЙ ID
-                        description: 'Пополнение PlayStation Store',
-                        amount: parseFloat(amount),
+                        publicId: 'pk_f40c5ff654a102c24b210617e2a0f', // ТВОЙ НОВЫЙ ID
+                        description: 'Пополнение PS Store',
+                        amount: amount,
                         currency: 'RUB',
-                        accountId: String(userId),
-                        invoiceId: 'order_' + Date.now()
+                        accountId: userId,
+                        invoiceId: 'order_' + Date.now(),
+                        data: { user_id: userId }
                     },
                     {
                         onSuccess: function (options) { 
-                            tg.showAlert("✅ Оплата прошла! Менеджер отправит код."); 
+                            tg.showAlert("✅ Оплата прошла!"); 
                             tg.close(); 
                         },
                         onFail: function (reason, options) { 
-                            tg.showAlert("❌ Ошибка: " + reason); 
+                            tg.showAlert("❌ Отказ: " + reason); 
                         }
                     }
                 );
             } catch (e) {
-                tg.showAlert("Критическая ошибка: " + e.message);
+                // Если что-то не так, мы увидим это в окне
+                tg.showAlert("Ошибка запуска виджета: " + e.message);
             }
-        };
+        }
     </script>
 </body>
 </html>
