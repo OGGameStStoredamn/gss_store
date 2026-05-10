@@ -8,22 +8,22 @@
     <script src="https://cloudpayments.ru"></script>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; color: #333; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        h2 { margin-bottom: 20px; align-self: flex-start; }
         .card { background: white; border-radius: 15px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); width: 100%; max-width: 400px; box-sizing: border-box; }
-        .title { font-size: 18px; font-weight: bold; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
-        button { background: #0088cc; color: white; border: none; border-radius: 12px; padding: 12px; width: 100%; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 15px; transition: background 0.2s; }
-        button:active { background: #0077b5; transform: scale(0.98); }
-        select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; font-size: 14px; background: #fafafa; appearance: none; }
+        .title { font-size: 18px; font-weight: bold; margin-bottom: 15px; }
+        button { background: #0088cc; color: white; border: none; border-radius: 12px; padding: 15px; width: 100%; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        button:active { transform: scale(0.98); background: #0077b5; }
+        select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; font-size: 16px; background: #fafafa; margin-bottom: 10px; }
     </style>
 </head>
 <body>
-    <h2>🎮 Магазин GSS</h2>
+    <h2 style="width: 100%; text-align: left;">🎮 Магазин GSS</h2>
     
     <div class="card">
         <div class="title">PlayStation Turkey (TL) 🇹🇷</div>
         <select id="nominal_tr">
             <option value="1500" data-val="250">250 TL — 1500₽</option>
             <option value="3000" data-val="500">500 TL — 3000₽</option>
+            <option value="4500" data-val="750">750 TL — 4500₽</option>
             <option value="6000" data-val="1000">1000 TL — 6000₽</option>
         </select>
         <button onclick="pay('tr')">Купить коды</button>
@@ -44,40 +44,46 @@
         tg.expand(); 
 
         function pay(region) {
-            let select = document.getElementById('nominal_' + region);
-            let amount = select.value;
-            let label = select.options[select.selectedIndex].text;
-            let nominalValue = select.options[select.selectedIndex].getAttribute('data-val');
-            
-            // Получаем ID пользователя безопасно
-            let userId = tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : "unknown";
-
-            var widget = new cp.CloudPayments();
-            widget.pay('auth', 
-                { 
-                    publicId: 'pk_58452a4fdeaf4305db7c779244bae',
-                    description: 'Оплата ' + label,
-                    amount: parseFloat(amount),
-                    currency: 'RUB',
-                    accountId: userId, 
-                    invoiceId: region + '_' + nominalValue + '_' + Date.now(), 
-                    data: {
-                        user_id: userId,
-                        region: region,
-                        nominal: nominalValue
-                    }
-                }, // Исправлено: добавлена закрывающая скобка здесь
-                {
-                    onSuccess: function (options) { 
-                        tg.showConfirm("✅ Оплата прошла! Напишите боту для получения кода.", function(){
-                            tg.close();
-                        });
-                    },
-                    onFail: function (reason, options) { 
-                        tg.showAlert("❌ Ошибка: " + reason);
-                    }
+            try {
+                let select = document.getElementById('nominal_' + region);
+                let amount = select.value;
+                let label = select.options[select.selectedIndex].text;
+                let nominalValue = select.options[select.selectedIndex].getAttribute('data-val');
+                
+                // Безопасно получаем ID пользователя
+                let userId = "0";
+                if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                    userId = String(tg.initDataUnsafe.user.id);
                 }
-            );
+
+                let widget = new cp.CloudPayments();
+                widget.pay('auth', 
+                    { // Настройки платежа
+                        publicId: 'pk_58452a4fdeaf4305db7c779244bae',
+                        description: 'Оплата ' + label,
+                        amount: parseFloat(amount),
+                        currency: 'RUB',
+                        accountId: userId, 
+                        invoiceId: region + '_' + nominalValue + '_' + Date.now(),
+                        data: {
+                            user_id: userId,
+                            region: region,
+                            nominal: nominalValue
+                        }
+                    },
+                    { // Обработка результата
+                        onSuccess: function (options) { 
+                            tg.showAlert("✅ Оплата прошла! Мы выдадим код в боте.");
+                            tg.close();
+                        },
+                        onFail: function (reason, options) { 
+                            tg.showAlert("❌ Ошибка: " + reason);
+                        }
+                    }
+                );
+            } catch (err) {
+                tg.showAlert("Критическая ошибка: " + err.message);
+            }
         }
     </script>
 </body>
