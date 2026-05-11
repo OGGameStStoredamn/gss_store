@@ -4,112 +4,234 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>GSS Store</title>
-    <!-- Загрузка скриптов -->
     <script src="https://telegram.org"></script>
     <script src="https://cloudpayments.ru"></script>
     <style>
-        :root { --tg-theme-button-color: #ff007f; }
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-            margin: 0; padding: 0; color: white;
-            background: #000 url('bg.jpg') no-repeat center top fixed;
-            background-size: cover;
+            margin: 0; padding: 0; 
+            background-color: #1a1a1a; /* Тот самый серый фон */
+            color: #ffffff;
             display: flex; flex-direction: column; align-items: center;
-            min-height: 100vh; overflow-x: hidden;
+            min-height: 100vh;
         }
-        .container { width: 100%; max-width: 500px; padding: 20px; box-sizing: border-box; }
-        .header { margin-bottom: 25px; text-align: center; }
-        .header h1 { font-size: 24px; text-shadow: 0 0 15px #ff007f; margin: 0; }
+        .container { width: 100%; max-width: 450px; padding: 20px; box-sizing: border-box; }
+        h1 { font-size: 22px; text-align: center; margin-bottom: 30px; letter-spacing: 1px; color: #eeeeee; }
         
-        /* Стеклянные карточки как у топовых ботов */
-        .category-card {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 18px;
-            padding: 15px;
+        .card {
+            background: #252525;
+            border: 1px solid #333333;
+            border-radius: 16px;
+            padding: 20px;
             margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
-        .label { font-size: 14px; color: rgba(255, 255, 255, 0.7); margin-bottom: 8px; }
+        .label { font-size: 13px; color: #888888; margin-bottom: 10px; text-transform: uppercase; }
         
         select {
-            width: 100%; background: rgba(0, 0, 0, 0.5);
-            color: white; border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 12px; border-radius: 10px; font-size: 16px; outline: none;
-            margin-bottom: 15px;
+            width: 100%; background: #121212;
+            color: white; border: 1px solid #444;
+            padding: 14px; border-radius: 10px; font-size: 16px; outline: none;
+            margin-bottom: 20px; appearance: none;
         }
         
         .buy-btn {
-            background: linear-gradient(90deg, #ff007f 0%, #6200ea 100%);
-            color: white; border: none; border-radius: 12px; padding: 16px;
+            background: #ffffff;
+            color: #000000; border: none; border-radius: 12px; padding: 16px;
             width: 100%; font-size: 16px; font-weight: bold; cursor: pointer;
-            box-shadow: 0 5px 15px rgba(255, 0, 127, 0.3);
+            transition: all 0.2s;
         }
-        .buy-btn:active { transform: scale(0.97); opacity: 0.9; }
+        .buy-btn:active { transform: scale(0.96); background: #cccccc; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>GAME STATION STORE</h1>
-        </div>
+        <h1>GAME STATION STORE</h1>
 
-        <div class="category-card">
-            <div class="label">PlayStation Turkey 🇹🇷 (Лиры)</div>
+        <div class="card">
+            <div class="label">PlayStation Turkey 🇹🇷</div>
             <select id="tr_nominal">
-                <option value="1500" data-nominal="250">250 TL — 1500 ₽</option>
-                <option value="3000" data-nominal="500">500 TL — 3000 ₽</option>
-                <option value="6000" data-nominal="1000">1000 TL — 6000 ₽</option>
-                <option value="12000" data-nominal="2000">2000 TL — 12000 ₽</option>
+                <option value="1500">250 TL — 1500 ₽</option>
+                <option value="3000">500 TL — 3000 ₽</option>
+                <option value="6000">1000 TL — 6000 ₽</option>
             </select>
-            <button class="buy-btn" onclick="pay('tr')">💳 КУПИТЬ КОДЫ</button>
+            <button class="buy-btn" onclick="pay('tr')">КУПИТЬ КОДЫ</button>
         </div>
 
-        <div class="category-card">
-            <div class="label">PlayStation India 🇮🇳 (Рупии)</div>
+        <div class="card">
+            <div class="label">PlayStation India 🇮🇳</div>
             <select id="in_nominal">
-                <option value="1800" data-nominal="1000">1000 INR — 1800 ₽</option>
-                <option value="8500" data-nominal="5000">5000 INR — 8500 ₽</option>
+                <option value="1800">1000 INR — 1800 ₽</option>
+                <option value="8500">5000 INR — 8500 ₽</option>
             </select>
-            <button class="buy-btn" onclick="pay('in')">💳 КУПИТЬ КОДЫ</button>
+            <button class="buy-btn" onclick="pay('in')">КУПИТЬ КОДЫ</button>
         </div>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
-        tg.ready(); // Сообщаем TG что приложение готово
+        tg.ready();
         tg.expand();
 
         function pay(region) {
-            const select = document.getElementById(region + '_nominal');
-            const amount = parseFloat(select.value);
-            const nominalName = select.options[select.selectedIndex].text;
-            const userId = tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : "0";
+            try {
+                const select = document.getElementById(region + '_nominal');
+                const amount = parseFloat(select.value);
+                const nominalName = select.options[select.selectedIndex].text;
+                
+                // Получаем ID пользователя
+                const userId = tg.initDataUnsafe?.user?.id ? String(tg.initDataUnsafe.user.id) : "guest";
 
-            // Инициализация виджета
-            const widget = new cp.CloudPayments();
-            
-            widget.pay('charge', // Используем прямой платеж
-                {
-                    publicId: 'pk_f40c5ff654a102c24b210617e2a0f',
-                    description: 'Покупка ' + nominalName,
-                    amount: amount,
-                    currency: 'RUB',
-                    accountId: String(userId),
-                    invoiceId: 'inv_' + Date.now(),
-                    data: { user_id: userId, reg: region }
-                },
-                {
-                    onSuccess: function (options) {
-                        tg.showAlert("✅ Оплата прошла успешно!");
-                        tg.close();
-                    },
-                    onFail: function (reason, options) {
-                        tg.showAlert("❌ Ошибка: " + reason);
-                    }
+                // Проверка загрузки виджета
+                if (typeof cp === 'undefined') {
+                    tg.showAlert("Ошибка: Платежный модуль не загружен. Переоткройте приложение.");
+                    return;
                 }
-            );
+
+                const widget = new cp.CloudPayments();
+                
+                widget.pay('charge', 
+                    {
+                        publicId: 'pk_f40c5ff654a102c24b210617e2a0f',
+                        description: 'Оплата ' + nominalName,
+                        amount: amount,
+                        currency: 'RUB',
+                        accountId: userId,
+                        invoiceId: 'gss_' + Date.now(),
+                        data: { user_id: userId }
+                    },
+                    {
+                        onSuccess: function (options) {
+                            tg.showAlert("✅ Оплата прошла! Код будет отправлен в боте.");
+                            tg.close();
+                        },
+                        onFail: function (reason, options) {
+                            tg.showAlert("❌ Ошибка оплаты: " + reason);
+                        }
+                    }
+                );
+            } catch (err) {
+                tg.showAlert("Критическая ошибка: " + err.message);
+            }
+        }
+    </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GSS Store</title>
+    <script src="https://telegram.org"></script>
+    <script src="https://cloudpayments.ru"></script>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            margin: 0; padding: 0; 
+            background-color: #1a1a1a; /* Тот самый серый фон */
+            color: #ffffff;
+            display: flex; flex-direction: column; align-items: center;
+            min-height: 100vh;
+        }
+        .container { width: 100%; max-width: 450px; padding: 20px; box-sizing: border-box; }
+        h1 { font-size: 22px; text-align: center; margin-bottom: 30px; letter-spacing: 1px; color: #eeeeee; }
+        
+        .card {
+            background: #252525;
+            border: 1px solid #333333;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .label { font-size: 13px; color: #888888; margin-bottom: 10px; text-transform: uppercase; }
+        
+        select {
+            width: 100%; background: #121212;
+            color: white; border: 1px solid #444;
+            padding: 14px; border-radius: 10px; font-size: 16px; outline: none;
+            margin-bottom: 20px; appearance: none;
+        }
+        
+        .buy-btn {
+            background: #ffffff;
+            color: #000000; border: none; border-radius: 12px; padding: 16px;
+            width: 100%; font-size: 16px; font-weight: bold; cursor: pointer;
+            transition: all 0.2s;
+        }
+        .buy-btn:active { transform: scale(0.96); background: #cccccc; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>GAME STATION STORE</h1>
+
+        <div class="card">
+            <div class="label">PlayStation Turkey 🇹🇷</div>
+            <select id="tr_nominal">
+                <option value="1500">250 TL — 1500 ₽</option>
+                <option value="3000">500 TL — 3000 ₽</option>
+                <option value="6000">1000 TL — 6000 ₽</option>
+            </select>
+            <button class="buy-btn" onclick="pay('tr')">КУПИТЬ КОДЫ</button>
+        </div>
+
+        <div class="card">
+            <div class="label">PlayStation India 🇮🇳</div>
+            <select id="in_nominal">
+                <option value="1800">1000 INR — 1800 ₽</option>
+                <option value="8500">5000 INR — 8500 ₽</option>
+            </select>
+            <button class="buy-btn" onclick="pay('in')">КУПИТЬ КОДЫ</button>
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+
+        function pay(region) {
+            try {
+                const select = document.getElementById(region + '_nominal');
+                const amount = parseFloat(select.value);
+                const nominalName = select.options[select.selectedIndex].text;
+                
+                // Получаем ID пользователя
+                const userId = tg.initDataUnsafe?.user?.id ? String(tg.initDataUnsafe.user.id) : "guest";
+
+                // Проверка загрузки виджета
+                if (typeof cp === 'undefined') {
+                    tg.showAlert("Ошибка: Платежный модуль не загружен. Переоткройте приложение.");
+                    return;
+                }
+
+                const widget = new cp.CloudPayments();
+                
+                widget.pay('charge', 
+                    {
+                        publicId: 'pk_f40c5ff654a102c24b210617e2a0f',
+                        description: 'Оплата ' + nominalName,
+                        amount: amount,
+                        currency: 'RUB',
+                        accountId: userId,
+                        invoiceId: 'gss_' + Date.now(),
+                        data: { user_id: userId }
+                    },
+                    {
+                        onSuccess: function (options) {
+                            tg.showAlert("✅ Оплата прошла! Код будет отправлен в боте.");
+                            tg.close();
+                        },
+                        onFail: function (reason, options) {
+                            tg.showAlert("❌ Ошибка оплаты: " + reason);
+                        }
+                    }
+                );
+            } catch (err) {
+                tg.showAlert("Критическая ошибка: " + err.message);
+            }
         }
     </script>
 </body>
